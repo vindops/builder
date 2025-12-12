@@ -12,7 +12,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        base: [jammy]
+        distro: [jammy]
 
     steps:
       - name: Checkout repo
@@ -42,11 +42,16 @@ jobs:
         run: |
           echo "DIR=${{ steps.detect.outputs.version_dir }}"
           echo "PYTHON_VERSION=${{ steps.detect.outputs.python_version }}"
-          echo "BASE=${{ matrix.base }}"
+          echo "DISTRO=${{ matrix.distro }}"
+
+      - name: Login GHCR
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" \
+            | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
       - name: Build using python3-builder image
         run: |
-          IMAGE="ghcr.io/vindops/python3-builder:${{ steps.detect.outputs.python_version }}-${{ matrix.base }}"
+          IMAGE="ghcr.io/vindops/python3-builder:${{ steps.detect.outputs.version_dir }}-${{ matrix.distro }}"
 
           echo "Running builder: $IMAGE"
 
