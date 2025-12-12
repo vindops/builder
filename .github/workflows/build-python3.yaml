@@ -1,0 +1,47 @@
+name: Build python3 via pyenv
+
+on:
+  push:
+    paths:
+      - "python3/*/VERSION"
+
+jobs:
+  build:
+    runs-on: ubuntu:22.04
+
+    strategy:
+      fail-fast: false
+      matrix:
+        base: [jammy]
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Detect version folder
+        id: detect
+        run: |
+          # Find changed VERSION file
+          FILE=$(git diff --name-only HEAD~1 HEAD | grep VERSION)
+          VERSION_DIR=$(echo "$FILE" | cut -d'/' -f2)
+          PYVER=$(cat python3/$VERSION_DIR/VERSION)
+
+          echo "version_dir=$VERSION_DIR" >> $GITHUB_OUTPUT
+          echo "python_version=$PYVER" >> $GITHUB_OUTPUT
+
+      - name: Debug info
+        run: |
+          echo "DIR=${{ steps.detect.outputs.version_dir }}"
+          echo "PYTHON_VERSION=${{ steps.detect.outputs.python_version }}"
+          echo "BASE=${{ matrix.base }}"
+
+      - name: Build using python3-builder image
+        run: |
+          IMAGE="ghcr.io/vindops/python3-builder:${{ steps.detect.outputs.python_version }}-${{ matrix.base }}"
+
+          echo "Running builder: $IMAGE"
+
+          docker run --rm \
+            -e PYTHON_VERSION="${{ steps.detect.outputs.python_version }}" \
+            -e GITHUB_TOKEN="${{ secrets.GITHUB_TOKEN }}" \
+            "$IMAGE"

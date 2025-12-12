@@ -1,0 +1,56 @@
+FROM ubuntu:22.04
+
+LABEL org.opencontainers.image.description="Python 3.12 on Ubuntu 22.04" \
+  org.opencontainers.image.source="https://github.com/vindops/builder/python3/3.12"
+
+SHELL ["/bin/bash", "-xo", "pipefail", "-c"]
+
+ENV LANG=C.UTF-8 \
+  DEBIAN_FRONTEND=noninteractive \
+  PYENV_ROOT="/opt/pyenv"
+
+ENV PATH="$PYENV_ROOT/bin:$PYENV_ROOT/shims:$PATH"
+
+RUN <<EOT
+  set -ex
+  apt-get update
+  apt-get install -y --no-install-recommends \
+    ca-certificates \
+    curl \
+    xz-utils \
+    bzip2 \
+    locales \
+    git pkg-config make gnupg2 dirmngr gcc g++ clang libclang-dev \
+    libfreetype6-dev libjpeg-dev libpng-dev libxml2-dev libxslt1-dev \
+    zlib1g-dev libssl-dev libbz2-dev libreadline-dev libsqlite3-dev libffi-dev liblzma-dev libldap2-dev \
+    libpq-dev libsasl2-dev libncurses-dev tk-dev uuid-dev
+
+  curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
+    | gpg --dearmor -o /etc/apt/keyrings/githubcli.gpg
+  echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli.gpg] https://cli.github.com/packages stable main" \
+    > /etc/apt/sources.list.d/github-cli.list
+  apt-get update && apt-get install -y gh
+
+  locale-gen "${LANG}"
+  update-locale LANG="${LANG}"
+
+  curl https://pyenv.run | bash
+  profiles="$HOME/.bashrc $HOME/.profile $HOME/.bash_profile"
+  for profile in $profiles; do
+    {
+      echo '# Pyenv configuration'
+      echo 'export PYENV_ROOT="\$HOME/.pyenv"'
+      echo 'command -v pyenv >/dev/null || export PATH="\$PYENV_ROOT/bin:\$PATH"'
+      echo 'eval "\$(pyenv init -)"'
+    } >> "$profile"
+  done
+
+  apt-get clean -y
+  apt-get autoremove -y
+  rm -rf /var/lib/apt/lists /var/cache/apt/archives
+EOT
+
+ADD ./entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
