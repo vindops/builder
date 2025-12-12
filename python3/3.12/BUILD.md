@@ -23,10 +23,6 @@ crane flatten --platform linux/amd64 \
   ghcr.io/vindops/python3-builder:3.12-jammy-uf \
   -t ghcr.io/vindops/python3-builder:3.12-jammy-amd64 -v
 
-crane flatten --platform linux/amd64 \
-  ghcr.io/vindops/python3-builder:3.12-jammy-uf \
-  -t ghcr.io/vindops/python3-builder:3.12-jammy-amd64 -v
-
 crane flatten --platform linux/arm64 \
   ghcr.io/vindops/python3-builder:3.12-jammy-uf \
   -t ghcr.io/vindops/python3-builder:3.12-jammy-arm64 -v
