@@ -1,5 +1,9 @@
 name: Build python3 via pyenv
 
+permissions:
+  contents: write
+  packages: write
+
 on:
   push:
     paths:
