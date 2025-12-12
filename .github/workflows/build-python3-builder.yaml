@@ -1,0 +1,61 @@
+name: Build python3-builder docker image
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  build:
+    runs-on: ${{ matrix.runner }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        distro: [jammy]
+
+        include:
+          - distro: jammy
+            runner: ubuntu-22.04
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Detect version folder
+        id: detect
+        run: |
+          if git rev-parse HEAD~1 >/dev/null 2>&1; then
+            FILE=$(git diff --name-only HEAD~1 HEAD | grep VERSION || true)
+          else
+            FILE=$(git show --name-only HEAD | grep VERSION || true)
+          fi
+
+          if [ -z "$FILE" ]; then
+            echo "No VERSION file changed. Exiting."
+            exit 1
+          fi
+
+          VERSION_DIR=$(echo "$FILE" | cut -d'/' -f2)
+          PYVER=$(cat python3/$VERSION_DIR/VERSION)
+
+          echo "version_dir=$VERSION_DIR" >> $GITHUB_OUTPUT
+          echo "python_version=$PYVER" >> $GITHUB_OUTPUT
+
+      - name: Build & push
+        uses: docker/build-push-action@v5
+        with:
+          context: python3/${{ steps.detect.outputs.version_dir }}
+          file: python3/${{ steps.detect.outputs.version_dir }}/Dockerfile.${{ matrix.distro }}
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/python3-builder:${{ steps.detect.outputs.version_dir }}-${{ matrix.distro }}

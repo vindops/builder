@@ -11,12 +11,23 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
+    runs-on: ${{ matrix.runner }}
 
     strategy:
       fail-fast: false
       matrix:
         distro: [jammy]
+        arch: [amd64, arm64]
+        include:
+        - distro: jammy
+          arch: amd64
+          runner: ubuntu-22.04
+          platform: linux/amd64
+
+        - distro: jammy
+          arch: arm64
+          runner: ubuntu-22.04-arm
+          platform: linux/arm64
 
     steps:
       - name: Checkout repo
@@ -48,10 +59,12 @@ jobs:
           echo "PYTHON_VERSION=${{ steps.detect.outputs.python_version }}"
           echo "DISTRO=${{ matrix.distro }}"
 
-      - name: Login GHCR
-        run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" \
-            | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build using python3-builder image
         run: |
