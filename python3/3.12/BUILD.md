@@ -16,6 +16,13 @@ docker buildx build \
   --tag ghcr.io/vindops/python3-builder:3.12-jammy-uf -f ./Dockerfile.jammy . | tee -a build.log 2>&1
 docker image prune -f
 
+
+crane flatten ghcr.io/vindops/python3-builder:3.12-jammy-uf -t ghcr.io/vindops/python3-builder:3.12-jammy -v
+
+crane flatten --platform linux/amd64 \
+  ghcr.io/vindops/python3-builder:3.12-jammy-uf \
+  -t ghcr.io/vindops/python3-builder:3.12-jammy-amd64 -v
+
 crane flatten --platform linux/amd64 \
   ghcr.io/vindops/python3-builder:3.12-jammy-uf \
   -t ghcr.io/vindops/python3-builder:3.12-jammy-amd64 -v
@@ -41,7 +48,5 @@ gh api /user/packages/container/python3-builder/versions --jq '.[] | select(.met
 gh api /user/packages/container/python3-builder/versions --jq '.[] | select(.metadata.container.tags==[]) | .id' | \
   xargs -r -I {} gh api --method DELETE /user/packages/container/python3-builder/versions/{}
 
-gh api --method DELETE /user/packages/container/myimage
-
-crane flatten ghcr.io/vindops/python3-builder:3.12-jammy-uf -t ghcr.io/vindops/python3-builder:3.12-jammy -v
+gh api --method DELETE /user/packages/container/python3-builder
 ```
