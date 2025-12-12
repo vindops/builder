@@ -21,8 +21,17 @@ jobs:
       - name: Detect version folder
         id: detect
         run: |
-          # Find changed VERSION file
-          FILE=$(git diff --name-only HEAD~1 HEAD | grep VERSION)
+          if git rev-parse HEAD~1 >/dev/null 2>&1; then
+            FILE=$(git diff --name-only HEAD~1 HEAD | grep VERSION || true)
+          else
+            FILE=$(git show --name-only HEAD | grep VERSION || true)
+          fi
+
+          if [ -z "$FILE" ]; then
+            echo "No VERSION file changed. Exiting."
+            exit 1
+          fi
+
           VERSION_DIR=$(echo "$FILE" | cut -d'/' -f2)
           PYVER=$(cat python3/$VERSION_DIR/VERSION)
 
